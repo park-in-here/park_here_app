@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 // ignore: depend_on_referenced_packages
 import 'package:google_fonts/google_fonts.dart';
-import 'package:park_in_here/screens/register.dart';
+import 'package:park_in_here/screens/register/view/register.dart';
 import 'package:pinput/pinput.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -122,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Container(
         width: double.infinity,
         height: 50,
-        padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 0),
         decoration: ShapeDecoration(
           color: const Color(0xFFF3F6FF),
           shape: RoundedRectangleBorder(

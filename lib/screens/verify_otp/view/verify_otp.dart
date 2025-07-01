@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:park_in_here/screens/passcode.dart';
+// import 'package:park_in_here/screens/passcode.dart';
+import 'package:park_in_here/screens/verify_otp/controller/verify_otp_controller.dart';
 import 'package:pinput/pinput.dart';
 
 class VerifyOtpScreen extends StatefulWidget {
   final bool isReset;
-  const VerifyOtpScreen({super.key, required this.isReset});
+  final String name;
+  final String phone;
+  const VerifyOtpScreen(
+      {super.key,
+      required this.isReset,
+      required this.phone,
+      required this.name});
 
   @override
   State<VerifyOtpScreen> createState() => _VerifyOtpScreenState();
@@ -22,55 +29,62 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
       color: const Color(0xFF192242),
     );
     return SafeArea(
-        child: Scaffold(
-            body: SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.only(left: 14.0, right: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            gap(35),
-            Center(
-              child: Image.asset(
-                'assets/images/logo.png',
-                height: h * 0.24,
-                width: w * 0.2,
-              ),
-            ),
-            gap(30),
-            if (widget.isReset == false)
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                        text: 'Securely Register to\n',
-                        style: tstyle.copyWith(
-                            height: 1.4,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600)),
-                    TextSpan(
-                        text: 'ParkInHere ',
-                        style: tstyle.copyWith(
-                            height: 2,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w900)),
-                  ],
-                ),
-              ),
-            if (widget.isReset == true)
-              textStr('Reset your Passcode', 18, FontWeight.bold, 'Inter',
-                  TextDecoration.none, const Color(0xFF192242)),
-            gap(15),
-            textStr('Enter Your OTP', 14, FontWeight.w600, 'Inter',
-                TextDecoration.none, const Color(0xFF192242)),
-            gap(10),
-            otpField(),
-            gap(40),
-            otpBtn(),
-          ],
-        ),
-      ),
-    )));
+        child: GetBuilder<VerifyOtpController>(
+            init: VerifyOtpController(),
+            builder: (controller) => Scaffold(
+                    body: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 14.0, right: 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        gap(35),
+                        Center(
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            height: h * 0.24,
+                            width: w * 0.2,
+                          ),
+                        ),
+                        gap(30),
+                        if (widget.isReset == false)
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                    text: 'Securely Register to\n',
+                                    style: tstyle.copyWith(
+                                        height: 1.4,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600)),
+                                TextSpan(
+                                    text: 'ParkInHere ',
+                                    style: tstyle.copyWith(
+                                        height: 2,
+                                        fontSize: 30,
+                                        fontWeight: FontWeight.w900)),
+                              ],
+                            ),
+                          ),
+                        if (widget.isReset == true)
+                          textStr(
+                              'Reset your Passcode',
+                              18,
+                              FontWeight.bold,
+                              'Inter',
+                              TextDecoration.none,
+                              const Color(0xFF192242)),
+                        gap(15),
+                        textStr('Enter Your OTP', 14, FontWeight.w600, 'Inter',
+                            TextDecoration.none, const Color(0xFF192242)),
+                        gap(10),
+                        otpField(),
+                        gap(40),
+                        otpBtn(controller, widget.name, widget.phone),
+                      ],
+                    ),
+                  ),
+                ))));
   }
 
   Widget textStr(String title, double size, FontWeight weight, String family,
@@ -117,12 +131,12 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     );
   }
 
-  Widget otpBtn() {
+  Widget otpBtn(VerifyOtpController controller, String name, String phone) {
     return Padding(
       padding: const EdgeInsets.only(left: 8.0, right: 8),
       child: InkWell(
         onTap: () {
-          Get.to(() => const PassCodeScreen());
+          controller.verifyOtp(name, phone, otpCtrl.text);
         },
         child: Container(
           // width: 355,
