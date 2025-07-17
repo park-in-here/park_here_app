@@ -91,25 +91,15 @@ class _HomeScreenState extends State<HomeScreen> {
               resizeToAvoidBottomInset: false,
               body: Stack(
                 children: [
-                  GoogleMap(
-                    initialCameraPosition: const CameraPosition(
-                        target:
-                            LatLng(11.8915582, 75.3865161), // Center of the map
-                        zoom: 10),
-                    markers: _markers,
-                    onMapCreated: (GoogleMapController controller) {
-                      mapController = controller;
-                    },
+                 
+                  Container(
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        fit: BoxFit.fill,
+                        image: AssetImage('assets/images/map_bg.png'),
+                      ),
+                    ),
                   ),
-
-                  // Container(
-                  //   decoration: const BoxDecoration(
-                  //     image: DecorationImage(
-                  //       fit: BoxFit.fill,
-                  //       image: AssetImage('assets/images/map_bg.png'),
-                  //     ),
-                  //   ),
-                  // ),
                   Positioned(
                     top: 50,
                     left: showSuggestions ? 22 : 12,
