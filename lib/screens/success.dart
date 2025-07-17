@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:park_in_here/screens/home.dart';
+import 'package:park_in_here/screens/login/view/login.dart';
 
 class SuccessScreen extends StatelessWidget {
   const SuccessScreen({super.key});
@@ -55,7 +55,7 @@ class SuccessScreen extends StatelessWidget {
       padding: const EdgeInsets.only(left: 8.0, right: 8),
       child: InkWell(
         onTap: () {
-          Get.to(() => const HomeScreen());
+          Get.to(() => const LoginScreen());
         },
         child: Container(
           // width: 355,
@@ -67,7 +67,7 @@ class SuccessScreen extends StatelessWidget {
             ),
           ),
           child: Center(
-            child: textStr('Take me to Home', 16, FontWeight.w700, 'Lato',
+            child: textStr('Take me to Login', 16, FontWeight.w700, 'Lato',
                 TextDecoration.none, Colors.white),
           ),
         ),

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "749608110015",
+    "project_id": "park-in-app",
+    "storage_bucket": "park-in-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:749608110015:android:8ee6cafda8ef23a8b5c30a",
+        "android_client_info": {
+          "package_name": "com.parkin.park_in_here"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLsTOw6RDgjFI8w5NQM0q3acgKG5B7gnM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

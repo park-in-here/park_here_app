@@ -1,6 +1,9 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:park_in_here/screens/register/controller/register_controller.dart';
@@ -127,12 +130,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         height: 50,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
         decoration: ShapeDecoration(
-          color: const Color(0xFFF3F6FF),
+          color: const Color.fromARGB(255, 183, 203, 239).withOpacity(0.2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(25),
           ),
         ),
         child: TextField(
+          inputFormatters: ctrlr == mobCtrlr
+              ? [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10)
+                ]
+              : [],
           controller: ctrlr,
           decoration: InputDecoration(
               contentPadding: const EdgeInsets.all(8),
@@ -192,7 +201,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           child: Center(
             child: controller.isLoading == true
-                ? const CircularProgressIndicator()
+                ? const CircularProgressIndicator(
+                    color: Colors.white,
+                  )
                 : textStr('Send OTP→', 16, FontWeight.w700, 'Lato',
                     TextDecoration.none, Colors.white),
           ),

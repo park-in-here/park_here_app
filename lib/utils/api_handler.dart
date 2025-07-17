@@ -17,33 +17,24 @@ class ApiBaseHelper {
     final head = {"Content-Type": "application/json"};
 
     try {
-      log('[HTTP POST] URL: $url');
-      log('[HTTP POST] Body: $data');
-
       final response = await http
           .post(link, headers: head, body: data)
           .timeout(const Duration(seconds: 10));
 
-      log('[HTTP POST] Status: ${response.statusCode}');
-      log('[HTTP POST] Body: ${response.body}');
-
       return _returnResponse(response);
     } on TimeoutException {
-      log('[HTTP POST] Request timed out');
       showToast(
         message: "Request timed out. Please try again.",
         backgroundColor: Colors.red,
       );
       throw UniversalException('Timeout');
     } on SocketException {
-      log('[HTTP POST] No internet connection');
       showToast(
         message: "No internet connection.",
         backgroundColor: Colors.red,
       );
       throw UniversalException('No internet');
     } catch (e) {
-      log('[HTTP POST] Unknown error: $e');
       showToast(
         message: "Something went wrong.",
         backgroundColor: Colors.red,
@@ -53,28 +44,37 @@ class ApiBaseHelper {
   }
 
   Future<dynamic> get(String url, String accessToken) async {
-    var responseJson;
-    var link = Uri.parse(url);
-    var token = accessToken;
-    var head = {"Content-Type": "application/json", "x-access-token": token};
-    try {
-      final response = await http.get(link, headers: head);
+    final link = Uri.parse(url);
+    final head = {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer $accessToken"
+    };
 
-      responseJson = _returnMessage(response);
-      responseJson = _returnResponse(response);
-    } on SocketException {
-      Fluttertoast.showToast(
-        msg: "No Internet connection",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 1,
+    try {
+      final response = await http
+          .get(link, headers: head)
+          .timeout(const Duration(seconds: 10));
+
+      return _returnResponse(response);
+    } on TimeoutException {
+      showToast(
+        message: "Request timed out. Please try again.",
         backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16,
       );
-      throw UniversalException('No Internet connection');
+      throw UniversalException('Timeout');
+    } on SocketException {
+      showToast(
+        message: "No internet connection.",
+        backgroundColor: Colors.red,
+      );
+      throw UniversalException('No internet');
+    } catch (e) {
+      showToast(
+        message: "Something went wrong.$e",
+        backgroundColor: Colors.red,
+      );
+      throw UniversalException('Unknown error');
     }
-    return responseJson;
   }
 
   Future<dynamic> delete(String url, String accessToken) async {
@@ -108,7 +108,7 @@ class ApiBaseHelper {
     var data = jsonEncode(body);
     var head = {
       "Content-Type": "application/json",
-      "x-access-token": accessToken
+      "Authorization": "Bearer $accessToken"
     };
     try {
       final response = await http.put(link, headers: head, body: data);
@@ -129,31 +129,39 @@ class ApiBaseHelper {
     return responseJson;
   }
 
-  Future<dynamic> postV2(String url, String accessToken) async {
-    var responseJson;
-    var link = Uri.parse(url);
-
-    var head = {
+  Future<dynamic> postV2(String url, String accessToken, Object body) async {
+    final link = Uri.parse(url);
+    final data = jsonEncode(body);
+    final head = {
       "Content-Type": "application/json",
-      "x-access-token": accessToken
+      "Authorization": "Bearer $accessToken"
     };
+
     try {
-      final response = await http.post(link, headers: head);
-      // responseJson = _returnMessage(response);
-      responseJson = _returnResponse(response);
-    } on SocketException {
-      Fluttertoast.showToast(
-        msg: "No Internet connection",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 1,
+      final response = await http
+          .post(link, headers: head, body: data)
+          .timeout(const Duration(seconds: 10));
+
+      return _returnResponse(response);
+    } on TimeoutException {
+      showToast(
+        message: "Request timed out. Please try again.",
         backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16,
       );
-      throw UniversalException('No Internet connection');
+      throw UniversalException('Timeout');
+    } on SocketException {
+      showToast(
+        message: "No internet connection.",
+        backgroundColor: Colors.red,
+      );
+      throw UniversalException('No internet');
+    } catch (e) {
+      showToast(
+        message: "Something went wrong.",
+        backgroundColor: Colors.red,
+      );
+      throw UniversalException('Unknown error');
     }
-    return responseJson;
   }
 
   Future<dynamic> putV2(String url, String accessToken) async {

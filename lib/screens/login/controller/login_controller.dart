@@ -2,7 +2,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 // import 'package:park_in_here/screens/home.dart';
-import 'package:park_in_here/screens/passcode/view/passcode.dart';
+import 'package:park_in_here/screens/home/view/home.dart';
 import 'package:park_in_here/screens/verify_otp/model/resp_model.dart';
 import 'package:park_in_here/utils/api_handler.dart';
 import 'package:get_storage/get_storage.dart';
@@ -10,32 +10,31 @@ import 'package:park_in_here/utils/app_exceptions.dart';
 import 'package:park_in_here/utils/constants.dart';
 import 'package:park_in_here/utils/toast.dart';
 
-class VerifyOtpController extends GetxController {
+class LoginController extends GetxController {
   ApiBaseHelper helper = ApiBaseHelper();
   GetStorage store = GetStorage();
   bool isLoading = false;
   VerifyOtpResponse respMOdel = VerifyOtpResponse();
 
-  verifyOtp(String name, String phone, String otp) async {
+  login(String mobile, String code) async {
+     final token = await store.read('token');
     isLoading = true;
     update();
     try {
-      var response = await helper.post("$base_url/api/auth/register/verify-otp",
-          {"otp": otp, "contact": phone, "name": name});
+      log(token);
+      var response = await helper.postV2("$base_url/api/auth/login", token,
+          {"contact": mobile, "passcode": code});
       log(response.toString());
-      respMOdel = VerifyOtpResponse.fromJson(response);
-      update();
-      log(response.toString());
-      if (respMOdel.message == "User registered successfully") {
-        await store.write('token', respMOdel.token);
-
-        log("Saved token: ${store.read('token')}");
+       respMOdel = VerifyOtpResponse.fromJson(response);
+ await store.write('token', respMOdel.token);
+      if (response['message'] == "User logged in successfully") {
+        await store.write('logged', true);
         showToast(
-            message: "User registered successfully",
+            message: "User logged in successfully",
             backgroundColor: Colors.green);
-        Get.to(() => const PassCodeScreen());
+        Get.to(() => const HomeScreen());
       } else {
-        showToast(message: respMOdel.message!, backgroundColor: Colors.red);
+        showToast(message: response['message'], backgroundColor: Colors.red);
       }
 
       isLoading = false;
@@ -45,5 +44,12 @@ class VerifyOtpController extends GetxController {
       isLoading = false;
       update();
     }
+  }
+
+  @override
+  void onInit() async {
+    var token = await store.read('token');
+    log('----$token');
+    super.onInit();
   }
 }

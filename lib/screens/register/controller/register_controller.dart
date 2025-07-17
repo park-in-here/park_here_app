@@ -19,7 +19,8 @@ class RegisterController extends GetxController {
     try {
       log('ggggg');
       var response = await helper.post(
-          "$base_url/api/auth/generate-otp", {"contact": phone, "name": name});
+          "$base_url/api/auth/register/generate-otp",
+          {"contact": phone, "name": name});
       log(response.toString());
       if (response['message'] == "OTP generated successfully") {
         showToast(

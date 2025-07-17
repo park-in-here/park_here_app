@@ -1,7 +1,8 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" 
+ package="com.parkin.park_in_here">
+
     <application
         android:label="park_in_here"
-        android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
@@ -29,5 +30,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+            <meta-data
+               android:name="com.google.android.geo.API_KEY"
+               android:value="AIzaSyCpzFlH_2xquklYVl92Jy0E7BKfEv1-Org"
+           android:exported="true"/>
     </application>
 </manifest>

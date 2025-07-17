@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,6 +23,8 @@ class VerifyOtpScreen extends StatefulWidget {
 
 class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   TextEditingController otpCtrl = TextEditingController();
+  bool otpEmpty = false;
+
   @override
   Widget build(BuildContext context) {
     var h = MediaQuery.of(context).size.height;
@@ -61,7 +65,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                                     text: 'ParkInHere ',
                                     style: tstyle.copyWith(
                                         height: 2,
-                                        fontSize: 30,
+                                        fontSize: 35,
                                         fontWeight: FontWeight.w900)),
                               ],
                             ),
@@ -79,6 +83,14 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                             TextDecoration.none, const Color(0xFF192242)),
                         gap(10),
                         otpField(),
+                        if (otpEmpty == true)
+                          textStr(
+                              'OTP should not be empty',
+                              10,
+                              FontWeight.w400,
+                              'Inter',
+                              TextDecoration.none,
+                              Colors.red),
                         gap(40),
                         otpBtn(controller, widget.name, widget.phone),
                       ],
@@ -103,18 +115,19 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
 
   Widget otpField() {
     const focusedBorderColor = Color.fromARGB(255, 219, 226, 249);
-    const fillColor = Color.fromARGB(255, 234, 236, 243);
+    const fillColor = Color.fromARGB(255, 183, 203, 239);
 
     final defaultPinTheme = PinTheme(
-      width: 70,
-      height: 60,
+      width: 80,
+      height: 50,
+      margin: const EdgeInsets.all(4),
       textStyle: const TextStyle(
         fontSize: 22,
         color: Color.fromRGBO(30, 60, 87, 1),
       ),
       decoration: BoxDecoration(
-        color: fillColor,
-        borderRadius: BorderRadius.circular(19),
+        color: fillColor.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(30),
       ),
     );
 
@@ -136,7 +149,18 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
       padding: const EdgeInsets.only(left: 8.0, right: 8),
       child: InkWell(
         onTap: () {
-          controller.verifyOtp(name, phone, otpCtrl.text);
+          if (otpCtrl.text == "") {
+            setState(() {
+              otpEmpty = true;
+            });
+          } else {
+            setState(() {
+              otpEmpty = false;
+            });
+          }
+          if (otpCtrl.text != "" && otpCtrl.text.length == 4) {
+            controller.verifyOtp(name, phone, otpCtrl.text);
+          }
         },
         child: Container(
           // width: 355,
@@ -148,47 +172,15 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
             ),
           ),
           child: Center(
-            child: textStr('verify OTP', 16, FontWeight.w700, 'Lato',
-                TextDecoration.none, Colors.white),
+            child: controller.isLoading == true
+                ? const CircularProgressIndicator(
+                    color: Colors.white,
+                  )
+                : textStr('verify OTP', 16, FontWeight.w700, 'Lato',
+                    TextDecoration.none, Colors.white),
           ),
         ),
       ),
-    );
-  }
-
-  Widget createBtn() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8.0, right: 8),
-      child: Container(
-        // width: 355,
-        height: 55,
-        decoration: ShapeDecoration(
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(27.50),
-              side: const BorderSide(color: Colors.black)),
-        ),
-        child: Center(
-          child: textStr('Create Account', 16, FontWeight.w700, 'Lato',
-              TextDecoration.none, Colors.black),
-        ),
-      ),
-    );
-  }
-
-  Widget termsPrivacy() {
-    return Row(
-      // mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        textStr('Terms and conditions', 12, FontWeight.w400, 'Inter',
-            TextDecoration.none, const Color(0xFF192242)),
-        textStr('|', 12, FontWeight.w400, 'Inter', TextDecoration.none,
-            const Color(0xFF192242)),
-        textStr('Privacy and policy', 12, FontWeight.w400, 'Inter',
-            TextDecoration.none, const Color(0xFF192242)),
-      ],
     );
   }
 

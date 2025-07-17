@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
-import 'package:park_in_here/screens/login.dart';
+import 'package:park_in_here/screens/login/view/login.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -111,7 +110,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                 opacity: _textAnimation,
                                 child: textStr(
                                   'Park Smart.Park Space',
-                                  20,
+                                  26,
                                   FontWeight.w900,
                                   Colors.white,
                                 ),
@@ -129,15 +128,15 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       children: [
                         textStr(
                           titles[currentIndex],
-                          22,
+                          24,
                           FontWeight.w700,
-                          const Color(0xFF192242),
+                          const Color(0xFF192342),
                         ),
                         gap(15),
                         textStr(
                           descrptns[currentIndex],
-                          16,
-                          FontWeight.w500,
+                          15,
+                          FontWeight.w400,
                           const Color(0xFF707070),
                         ),
                       ],
@@ -177,8 +176,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     },
                     child: textStr(
                       'Skip',
-                      16,
-                      FontWeight.w700,
+                      14,
+                      FontWeight.w600,
                       const Color(0xFF707070),
                     ),
                   ),
@@ -191,23 +190,24 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Widget textStr(String title, double size, FontWeight weight, Color color) {
-    TextStyle tstyle = GoogleFonts.inter(
-      color: const Color(0xFF192242),
+    TextStyle tstyle = const TextStyle(
+      color: Colors.white,
+      fontSize: 26,
+      fontFamily: 'Inter',
+      fontWeight: FontWeight.w700,
+      height: 1.40,
     );
     return Text(title,
         style: tstyle.copyWith(
-          fontSize: size,
-          fontWeight: weight,
-          color: color,
-        ));
+            fontSize: size, fontWeight: weight, color: color, height: 1.60));
   }
 
   Widget nextBtn() {
     return Container(
       width: 355,
-      height: 55,
+      height: 48,
       decoration: ShapeDecoration(
-        color: const Color(0xFF567DF4),
+        color: const Color.fromARGB(255, 102, 137, 242),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(27.50),
         ),
@@ -216,7 +216,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         child: textStr(
           'Next',
           16,
-          FontWeight.w700,
+          FontWeight.w500,
           Colors.white,
         ),
       ),
