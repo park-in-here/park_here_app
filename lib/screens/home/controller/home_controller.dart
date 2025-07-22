@@ -12,10 +12,11 @@ class HomeController extends GetxController {
   ApiBaseHelper helper = ApiBaseHelper();
   GetStorage store = GetStorage();
   bool isLoading = false;
+    bool mapisLoading = false;
   SearchLocModel respMOdel = SearchLocModel();
   List<LocData> locations = [];
   List<String> addresses = [];
-
+  List<LocData> nearby = [];
   getLocations(String text) async {
     log('llllll');
     final token = await store.read('token');
@@ -56,9 +57,40 @@ class HomeController extends GetxController {
     }
   }
 
+  getNearby( ) async {
+    log('rrrrr');
+    final token = await store.read('token');
+    mapisLoading = true;
+    update();
+    try {
+      var response = await helper.get(
+        "$base_url/api/findParking/near-by-spots",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb250YWN0IjoiODA3MzQ1ODgwMyIsInVzZXJJZCI6IjlhYzA0OWY4LTc5MjUtNDRkNS05MDNlLTBkZjFmNTkxZWQxMiIsImlhdCI6MTc1MzE4NTIxNSwiZXhwIjoxNzUzMTg4ODE1fQ._Mprw55UjFcFfXUut-oP2yK814JAy2V4dxOXly9VUks",
+      );
+      log(response.toString());
+      respMOdel = SearchLocModel.fromJson(response);
+      nearby = respMOdel.data ?? [];
+      // for (var loc in locations) {
+      //   List<Placemark> placemarks = await placemarkFromCoordinates(
+      //       loc.location!.latitude!, loc.location!.longitude!);
+      //   Placemark place = placemarks.first;
+      //   String address = '${place.street}, ${place.locality}';
+      //   addresses.add(address);
+      // }
+      update();
+      mapisLoading = false;
+      update();
+      // _checknewVersion();
+    } on UniversalException {
+      isLoading = false;
+      update();
+    }
+  }
+
   @override
   void onInit() async {
     var token = await store.read('token');
+    getNearby();
     log('----$token');
     super.onInit();
   }
