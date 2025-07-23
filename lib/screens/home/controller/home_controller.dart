@@ -65,7 +65,7 @@ class HomeController extends GetxController {
     try {
       var response = await helper.get(
         "$base_url/api/findParking/near-by-spots",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb250YWN0IjoiODA3MzQ1ODgwMyIsInVzZXJJZCI6IjlhYzA0OWY4LTc5MjUtNDRkNS05MDNlLTBkZjFmNTkxZWQxMiIsImlhdCI6MTc1MzE4NTIxNSwiZXhwIjoxNzUzMTg4ODE1fQ._Mprw55UjFcFfXUut-oP2yK814JAy2V4dxOXly9VUks",
+        token,
       );
       log(response.toString());
       respMOdel = SearchLocModel.fromJson(response);

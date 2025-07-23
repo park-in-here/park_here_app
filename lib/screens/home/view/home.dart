@@ -1,12 +1,18 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:location/location.dart';
+
 import 'package:park_in_here/screens/home/controller/home_controller.dart';
-import 'package:park_in_here/screens/home/model/search_loc_model.dart';
+import 'package:park_in_here/screens/home/model/search_loc_model.dart'
+    hide Location;
 // import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -22,11 +28,53 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> addresses = [];
   bool showSuggestions = false;
   HomeController contrlr = Get.put(HomeController());
+  LatLng? currentLocation;
+  final MapController mapController = MapController();
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _getCurrentLocation();
+  }
+
+  double calculateDistance(LatLng start, LatLng end) {
+    return Geolocator.distanceBetween(
+      start.latitude,
+      start.longitude,
+      end.latitude,
+      end.longitude,
+    ); // returns distance in meters
+  }
+
+  Future<void> _getCurrentLocation() async {
+    Location location = Location();
+
+    bool serviceEnabled;
+    PermissionStatus permissionGranted;
+
+    serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) {
+        return;
+      }
+    }
+
+    permissionGranted = await location.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await location.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) {
+        return;
+      }
+    }
+
+    final locData = await location.getLocation();
+    setState(() {
+      currentLocation = LatLng(locData.latitude!, locData.longitude!);
+    });
+    mapController.move(currentLocation!, 12.0);
+    log('Location fetched: ${locData.latitude}, ${locData.longitude}');
   }
 
   void _onSearchChanged() async {
@@ -66,81 +114,94 @@ class _HomeScreenState extends State<HomeScreen> {
                 resizeToAvoidBottomInset: false,
                 body: Stack(
                   children: [
-                    controller.mapisLoading
-                        ? const Center(child: CircularProgressIndicator())
+                    controller.mapisLoading || controller.nearby.isEmpty
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xff3572EF),
+                          ))
                         : FlutterMap(
+                            mapController: mapController,
                             options: MapOptions(
-                              center: LatLng(
-                                  controller.nearby[0].location!.latitude!,
-                                  controller.nearby[0].location!.longitude!),
-                              zoom: 14.0,
+                              center: currentLocation ??
+                                  LatLng(
+                                      controller.nearby[0].location!.latitude!,
+                                      controller
+                                          .nearby[0].location!.longitude!),
+                              zoom: 12.0,
+                              interactiveFlags:
+                                  InteractiveFlag.all & ~InteractiveFlag.rotate,
                             ),
                             children: [
                               TileLayer(
                                 backgroundColor: Colors.white,
                                 urlTemplate:
-                                    'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
                                 userAgentPackageName: 'com.parkin.park_in_here',
                               ),
                               MarkerLayer(
-                                markers: controller.mapisLoading
-                                    ? [] // Show nothing until loaded
-                                    : controller.nearby
-                                        .map((place) {
-                                          final lat = place.location?.latitude;
-                                          final lng = place.location?.longitude;
-                                          final name = place.name ?? 'Unnamed';
+                                markers: [
+                                  if (currentLocation != null)
+                                    Marker(
+                                      point: currentLocation!,
+                                      width: 80,
+                                      height: 80,
+                                      child: Image.asset(
+                                        'assets/images/current_loc.png',
+                                        height: 50,
+                                        width: 60,
+                                      ),
+                                    ),
+                                  ...controller.nearby
+                                      .map((place) {
+                                        final lat = place.location?.latitude;
+                                        final lng = place.location?.longitude;
 
-                                          if (lat == null || lng == null) {
-                                            return null;
-                                          }
+                                        if (lat == null || lng == null) {
+                                          return null;
+                                        }
 
-                                          return Marker(
-                                            width: 100,
-                                            height: 100,
-                                            point: LatLng(lat, lng),
-                                            child: Column(
-                                              children: [
-                                                const Icon(Icons.location_on,
-                                                    color: Colors.black,
-                                                    size: 30),
-                                                Container(
-                                                  height: 30,
-                                                  width: 100,
-                                                  decoration: ShapeDecoration(
-                                                    color: Colors.white,
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        5)),
-                                                    shadows: const [
-                                                      BoxShadow(
+                                        return Marker(
+                                          width: 100,
+                                          height: 100,
+                                          point: LatLng(lat, lng),
+                                          child: Column(
+                                            children: [
+                                              const Icon(Icons.location_on,
+                                                  color: Colors.black,
+                                                  size: 30),
+                                              Container(
+                                                height: 30,
+                                                width: 100,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius:
+                                                      BorderRadius.circular(5),
+                                                  boxShadow: const [
+                                                    BoxShadow(
                                                         color:
                                                             Color(0x3F000000),
                                                         blurRadius: 4,
-                                                        offset: Offset(0, 4),
-                                                        spreadRadius: 0,
-                                                      )
-                                                    ],
+                                                        offset: Offset(0, 4))
+                                                  ],
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    '${(currentLocation != null ? (calculateDistance(currentLocation!, LatLng(lat, lng)) / 1000).toStringAsFixed(2) : '?')} km',
+                                                    style: GoogleFonts.inter(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w500),
                                                   ),
-                                                  child: Center(
-                                                    child: Text(
-                                                      name,
-                                                      style: GoogleFonts.inter(
-                                                          fontSize: 12,
-                                                          fontWeight:
-                                                              FontWeight.w500),
-                                                    ),
-                                                  ),
-                                                )
-                                              ],
-                                            ),
-                                          );
-                                        })
-                                        .whereType<Marker>()
-                                        .toList(),
+                                                ),
+                                              )
+                                            ],
+                                          ),
+                                        );
+                                      })
+                                      .whereType<Marker>()
+                                      .toList(),
+                                ],
                               ),
                             ],
                           ),
@@ -169,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   hintText: 'Search your location here',
                                   textStyle: MaterialStateProperty.all(
                                     GoogleFonts.inter(
-                                      fontSize: 16,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w400,
                                       color: const Color(0xff707070),
                                     ),
@@ -356,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> {
     TextStyle tStyle = GoogleFonts.inter(
       fontSize: 14,
       fontWeight: FontWeight.w400,
-      color: const Color(0xff707070),
+      color: const Color.fromARGB(255, 152, 150, 150),
     );
 
     return Container(
@@ -370,9 +431,16 @@ class _HomeScreenState extends State<HomeScreen> {
               top:
                   BorderSide(color: const Color(0xff707070).withOpacity(0.2)))),
       child: controllr.isLoading
-          ? Text(
-              'Searching..',
-              style: tStyle,
+          ? const Center(
+              child: Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: SizedBox(
+                    height: 30,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xff3572EF),
+                    ),
+                  )),
             )
           : ListView.builder(
               padding: EdgeInsets.zero,
@@ -381,14 +449,19 @@ class _HomeScreenState extends State<HomeScreen> {
               itemBuilder: (context, index) {
                 var place = filteredResults[index];
                 var address = addresses[index];
+                final lati = place.location?.latitude;
+                final lngi = place.location?.longitude;
                 return ListTile(
-                  title: Text(
-                    place.name!,
-                    style: tStyle,
+                  title: Text.rich(
+                    _highlightText(place.name!, _searchController.text),
                   ),
                   subtitle: Text(
                     address,
                     style: tStyle,
+                  ),
+                  trailing: Text(
+                    '${(currentLocation != null ? (calculateDistance(currentLocation!, LatLng(lati!, lngi!)) / 1000).toStringAsFixed(2) : '...')} km',
+                    style: tStyle.copyWith(color: Colors.black),
                   ),
                   // trailing: Text(
                   //   place['distance'],
@@ -404,6 +477,45 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
+    );
+  }
+
+  TextSpan _highlightText(String fullText, String query) {
+    final queryLower = query.toLowerCase();
+    final fullTextLower = fullText.toLowerCase();
+
+    List<TextSpan> spans = [];
+    int start = 0;
+
+    while (true) {
+      final index = fullTextLower.indexOf(queryLower, start);
+      if (index < 0) {
+        spans.add(TextSpan(
+          text: fullText.substring(start),
+          style: const TextStyle(color: Color(0xff707070)), // grey
+        ));
+        break;
+      }
+
+      if (index > start) {
+        spans.add(TextSpan(
+          text: fullText.substring(start, index),
+          style: const TextStyle(color: Color(0xff707070)), // grey
+        ));
+      }
+
+      spans.add(TextSpan(
+        text: fullText.substring(index, index + query.length),
+        style: const TextStyle(
+            color: Colors.black, fontWeight: FontWeight.w600), // highlight
+      ));
+
+      start = index + query.length;
+    }
+
+    return TextSpan(
+      children: spans,
+      style: GoogleFonts.inter(fontSize: 14),
     );
   }
 
