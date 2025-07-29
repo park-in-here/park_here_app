@@ -27,6 +27,7 @@ class LoginController extends GetxController {
       log(response.toString());
        respMOdel = VerifyOtpResponse.fromJson(response);
  await store.write('token', respMOdel.token);
+  await store.write('name', respMOdel.user!.name);
       if (response['message'] == "User logged in successfully") {
         await store.write('logged', true);
         showToast(

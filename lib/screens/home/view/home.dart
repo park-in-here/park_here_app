@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:location/location.dart';
@@ -29,6 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool showSuggestions = false;
   HomeController contrlr = Get.put(HomeController());
   LatLng? currentLocation;
+  bool vehicleSelected = false;
+  bool locSelected = false;
+  GetStorage store = GetStorage();
   final MapController mapController = MapController();
 
   @override
@@ -214,203 +218,298 @@ class _HomeScreenState extends State<HomeScreen> {
                     //     ),
                     //   ),
                     // ),
-                    Positioned(
-                      top: 10,
-                      left: showSuggestions ? 22 : 12,
-                      right: showSuggestions ? 21 : 12,
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              SizedBox(
-                                width: showSuggestions ? w * 0.88 : w * 0.78,
-                                height: 40,
-                                child: SearchBar(
-                                  controller: _searchController,
-                                  hintText: 'Search your location here',
-                                  textStyle: MaterialStateProperty.all(
-                                    GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                      color: const Color(0xff707070),
-                                    ),
-                                  ),
-                                  onChanged: (value) => _onSearchChanged(),
-                                  backgroundColor:
-                                      WidgetStateProperty.all(Colors.white),
-                                  shape: WidgetStateProperty.all(
-                                    RoundedRectangleBorder(
-                                      borderRadius: showSuggestions
-                                          ? const BorderRadius.only(
-                                              topLeft: Radius.circular(20),
-                                              topRight: Radius.circular(20))
-                                          : BorderRadius.circular(20),
-                                      // Border width
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // const SizedBox(width: 8),
-                              if (showSuggestions == false)
-                                Image.asset(
-                                  'assets/images/menu.png',
-                                  height: 60,
-                                  width: 50,
-                                )
-                            ],
-                          ),
-                          if (showSuggestions) _buildSuggestions(w, controller),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 20,
-                      left: 0,
-                      right: 0,
-                      child: SizedBox(
-                        height: h * 0.28,
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: 2,
-                            itemBuilder: (context, index) {
-                              return GestureDetector(
-                                onTap: () {
-                                  showModalBottomSheet(
-                                      isScrollControlled: true,
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.vertical(
-                                            top: Radius.circular(20)),
-                                      ),
-                                      backgroundColor: Colors.white,
-                                      constraints:
-                                          BoxConstraints(maxHeight: h * 0.45),
-                                      context: context,
-                                      builder: (context) {
-                                        return Center(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                            children: [
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.all(12.0),
-                                                child: Row(
-                                                  children: [
-                                                    const Text(
-                                                      'Select the vehicle that you want\n to park',
-                                                      textAlign: TextAlign.left,
-                                                      style: TextStyle(
-                                                        color:
-                                                            Color(0xFF181818),
-                                                        fontSize: 16,
-                                                        fontFamily: 'Inter',
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        height: 1.38,
-                                                      ),
+                    vehicleSelected == false
+                        ? _welcome()
+                        : Positioned(
+                            top: 10,
+                            left: showSuggestions ? 22 : 12,
+                            right: showSuggestions ? 21 : 12,
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width:
+                                          showSuggestions ? w * 0.74 : w * 0.78,
+                                      height: 40,
+                                      child: SearchBar(
+                                        controller: _searchController,
+                                        hintText: 'Search your location here',
+                                        trailing: locSelected == true
+                                            ? [
+                                                IconButton(
+                                                    icon: const Icon(
+                                                      Icons.close,
+                                                      color: Colors.grey,
+                                                      size: 16,
                                                     ),
-                                                    const Spacer(),
-                                                    Image.asset(
-                                                      'assets/images/close.png',
-                                                      height: 25,
-                                                    )
-                                                  ],
-                                                ),
-                                              ),
-                                              Wrap(
-                                                  spacing: 12,
-                                                  runSpacing: 12,
-                                                  children:
-                                                      List.generate(5, (index) {
-                                                    return Container(
-                                                      width: index == 3 ||
-                                                              index == 4
-                                                          ? w * 0.4
-                                                          : w * 0.28,
-                                                      height: 120,
-                                                      // clipBehavior: Clip.antiAlias,
-                                                      decoration:
-                                                          ShapeDecoration(
-                                                        color: Colors.white,
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          side:
-                                                              const BorderSide(
-                                                            width: 1,
-                                                            color: Color(
-                                                                0xFFC1C1C1),
-                                                          ),
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(10),
-                                                        ),
-                                                      ),
-                                                      child: Center(
-                                                        child: Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .only(
-                                                                  bottom: 20.0),
-                                                          child: Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .end,
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .end,
-                                                            children: [
-                                                              Image.asset(
-                                                                'assets/images/Motorcycle.png',
-                                                                height: 40,
-                                                                width: 70,
-                                                              ),
-                                                              const SizedBox(
-                                                                height: 10,
-                                                              ),
-                                                              textItem(
-                                                                  'Two wheeler',
-                                                                  Colors.black,
-                                                                  12,
-                                                                  FontWeight
-                                                                      .w500)
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    );
-                                                  }))
-                                            ],
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        locSelected = false;
+                                                        showSuggestions = false;
+                                                      });
+                                                      _searchController.clear;
+                                                    })
+                                              ]
+                                            : null,
+                                        textStyle: MaterialStateProperty.all(
+                                          GoogleFonts.inter(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w400,
+                                            color: const Color(0xff707070),
                                           ),
-                                        );
-                                      });
-                                },
-                                child: optionItem(
-                                    h * 0.25,
-                                    w * 0.43,
-                                    index == 0 ? 'Find Parking' : 'Rent Space',
-                                    index == 0
-                                        ? 'assets/images/parking.png'
-                                        : 'assets/images/rent.png',
-                                    index == 0
-                                        ? const Color.fromARGB(
-                                            255, 145, 199, 188)
-                                        : const Color(0xffA77FF8)),
-                              );
-                            },
-                            separatorBuilder:
-                                (BuildContext context, int index) {
-                              return const SizedBox(width: 16);
-                            },
+                                        ),
+                                        onChanged: (value) =>
+                                            _onSearchChanged(),
+                                        backgroundColor:
+                                            WidgetStateProperty.all(
+                                                Colors.white),
+                                        shape: WidgetStateProperty.all(
+                                          RoundedRectangleBorder(
+                                            borderRadius: locSelected == true
+                                                ? BorderRadius.circular(20)
+                                                : showSuggestions
+                                                    ? const BorderRadius.only(
+                                                        topLeft:
+                                                            Radius.circular(20),
+                                                        topRight:
+                                                            Radius.circular(20))
+                                                    : BorderRadius.circular(20),
+                                            // Border width
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    // const SizedBox(width: 8),
+                                    // if (showSuggestions == false)
+                                    Image.asset(
+                                      'assets/images/menu.png',
+                                      height: 60,
+                                      width: 50,
+                                    )
+                                  ],
+                                ),
+                                if (showSuggestions)
+                                  _buildSuggestions(w, controller),
+                              ],
+                            ),
+                          ),
+                    if (locSelected == true) listPark(),
+                    if (vehicleSelected == false)
+                      Positioned(
+                        bottom: 20,
+                        left: 0,
+                        right: 0,
+                        child: SizedBox(
+                          height: h * 0.28,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: 2,
+                              itemBuilder: (context, index) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                        isScrollControlled: true,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.vertical(
+                                              top: Radius.circular(20)),
+                                        ),
+                                        backgroundColor: Colors.white,
+                                        constraints:
+                                            BoxConstraints(maxHeight: h * 0.45),
+                                        context: context,
+                                        builder: (context) {
+                                          return Center(
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                              children: [
+                                                Padding(
+                                                  padding: const EdgeInsets.all(
+                                                      12.0),
+                                                  child: Row(
+                                                    children: [
+                                                      const Text(
+                                                        'Select the vehicle that you want\n to park',
+                                                        textAlign:
+                                                            TextAlign.left,
+                                                        style: TextStyle(
+                                                          color:
+                                                              Color(0xFF181818),
+                                                          fontSize: 16,
+                                                          fontFamily: 'Inter',
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          height: 1.38,
+                                                        ),
+                                                      ),
+                                                      const Spacer(),
+                                                      Image.asset(
+                                                        'assets/images/close.png',
+                                                        height: 25,
+                                                      )
+                                                    ],
+                                                  ),
+                                                ),
+                                                Wrap(
+                                                    spacing: 12,
+                                                    runSpacing: 12,
+                                                    children: List.generate(5,
+                                                        (index) {
+                                                      return GestureDetector(
+                                                        onTap: () {
+                                                          setState(() {
+                                                            vehicleSelected =
+                                                                true;
+                                                          });
+                                                          Get.back();
+                                                        },
+                                                        child: Container(
+                                                          width: index == 3 ||
+                                                                  index == 4
+                                                              ? w * 0.4
+                                                              : w * 0.28,
+                                                          height: 120,
+                                                          // clipBehavior: Clip.antiAlias,
+                                                          decoration:
+                                                              ShapeDecoration(
+                                                            color: Colors.white,
+                                                            shape:
+                                                                RoundedRectangleBorder(
+                                                              side:
+                                                                  const BorderSide(
+                                                                width: 1,
+                                                                color: Color(
+                                                                    0xFFC1C1C1),
+                                                              ),
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          10),
+                                                            ),
+                                                          ),
+                                                          child: Center(
+                                                            child: Padding(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .only(
+                                                                      bottom:
+                                                                          20.0),
+                                                              child: Column(
+                                                                crossAxisAlignment:
+                                                                    CrossAxisAlignment
+                                                                        .end,
+                                                                mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .end,
+                                                                children: [
+                                                                  Image.asset(
+                                                                    'assets/images/Motorcycle.png',
+                                                                    height: 40,
+                                                                    width: 70,
+                                                                  ),
+                                                                  const SizedBox(
+                                                                    height: 10,
+                                                                  ),
+                                                                  textItem(
+                                                                      'Two wheeler',
+                                                                      Colors
+                                                                          .black,
+                                                                      12,
+                                                                      FontWeight
+                                                                          .w500)
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    }))
+                                              ],
+                                            ),
+                                          );
+                                        });
+                                  },
+                                  child: optionItem(
+                                      h * 0.25,
+                                      w * 0.43,
+                                      index == 0
+                                          ? 'Find Parking'
+                                          : 'Rent Space',
+                                      index == 0
+                                          ? 'assets/images/parking.png'
+                                          : 'assets/images/rent.png',
+                                      index == 0
+                                          ? const Color.fromARGB(
+                                              255, 145, 199, 188)
+                                          : const Color(0xffA77FF8)),
+                                );
+                              },
+                              separatorBuilder:
+                                  (BuildContext context, int index) {
+                                return const SizedBox(width: 16);
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                    )
+                      )
                   ],
                 ),
               ),
             ));
+  }
+
+  Widget _welcome() {
+    var w = MediaQuery.of(context).size.width;
+    return Container(
+      height: 60,
+      width: w,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      clipBehavior: Clip.antiAlias,
+      decoration: const ShapeDecoration(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(10),
+            bottomRight: Radius.circular(10),
+          ),
+        ),
+        shadows: [
+          BoxShadow(
+            color: Color(0x0C000000),
+            blurRadius: 14,
+            offset: Offset(0, 4),
+            spreadRadius: 0,
+          )
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            'Welcome ${store.read('name') ?? ''} !',
+            style: const TextStyle(
+              color: Color(0xFF181412) /* color-orange-8 */,
+              fontSize: 16,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w500,
+              height: 1.50,
+            ),
+          ),
+          const SizedBox(
+              width: 24,
+              height: 24,
+              child: Icon(
+                Icons.menu,
+                size: 16,
+              )),
+        ],
+      ),
+    );
   }
 
   Widget _buildSuggestions(double width, HomeController controllr) {
@@ -442,41 +541,158 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   )),
             )
-          : ListView.builder(
-              padding: EdgeInsets.zero,
-              shrinkWrap: true,
-              itemCount: filteredResults.length,
-              itemBuilder: (context, index) {
-                var place = filteredResults[index];
-                var address = addresses[index];
-                final lati = place.location?.latitude;
-                final lngi = place.location?.longitude;
-                return ListTile(
-                  title: Text.rich(
-                    _highlightText(place.name!, _searchController.text),
-                  ),
-                  subtitle: Text(
-                    address,
-                    style: tStyle,
-                  ),
-                  trailing: Text(
-                    '${(currentLocation != null ? (calculateDistance(currentLocation!, LatLng(lati!, lngi!)) / 1000).toStringAsFixed(2) : '...')} km',
-                    style: tStyle.copyWith(color: Colors.black),
-                  ),
-                  // trailing: Text(
-                  //   place['distance'],
-                  //   style: tStyle,
-                  // ),
-                  onTap: () {
-                    // Handle selection
-                    _searchController.text = place.name!;
-                    setState(() {
-                      showSuggestions = false;
-                    });
+          : locSelected == false
+              ? ListView.builder(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: true,
+                  itemCount: filteredResults.length,
+                  itemBuilder: (context, index) {
+                    var place = filteredResults[index];
+                    var address = addresses[index];
+                    final lati = place.location?.latitude;
+                    final lngi = place.location?.longitude;
+                    return ListTile(
+                      title: Text.rich(
+                        _highlightText(place.name!, _searchController.text),
+                      ),
+                      subtitle: Text(
+                        address,
+                        style: tStyle,
+                      ),
+                      trailing: Text(
+                        '${(currentLocation != null ? (calculateDistance(currentLocation!, LatLng(lati!, lngi!)) / 1000).toStringAsFixed(2) : '...')} km',
+                        style: tStyle.copyWith(color: Colors.black),
+                      ),
+                      // trailing: Text(
+                      //   place['distance'],
+                      //   style: tStyle,
+                      // ),
+                      onTap: () {
+                        // Handle selection
+                        _searchController.text = place.name!;
+                        setState(() {
+                          locSelected = true;
+                          showSuggestions = false;
+                        });
+                      },
+                    );
                   },
-                );
-              },
+                )
+              : null,
+    );
+  }
+
+  Widget gap(double h) {
+    return SizedBox(height: h);
+  }
+
+  Widget listPark() {
+    var w = MediaQuery.of(context).size.width;
+    return Padding(
+      padding: const EdgeInsets.only(top: 70.0, left: 12, right: 20),
+      child: ListView.separated(
+        itemCount: 8,
+        itemBuilder: (context, index) {
+          return Container(
+            width: w * 0.65,
+            height: 110,
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15), color: Colors.white),
+            child: Row(
+              children: [
+                Image.asset(
+                  'assets/images/Rectangle 59.png',
+                  height: 80,
+                  width: 100,
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    gap(12),
+                    const Text(
+                      'Graha Mall',
+                      style: TextStyle(
+                        color: Color(0xFF2D2D2D),
+                        fontSize: 14,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const Text(
+                      '123 Dhaka Street',
+                      style: TextStyle(
+                        color: Color(0x7F2D2D2D),
+                        fontSize: 11,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    gap(20),
+                    const Text(
+                      '₹500/hr',
+                      style: TextStyle(
+                        color: Color(0xFF081024),
+                        fontSize: 13,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(
+                  width: 20,
+                ),
+                Column(
+                  children: [
+                    gap(12),
+                    Container(
+                      height: 26,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 5),
+                      decoration: ShapeDecoration(
+                        color: const Color(0x1605C9AD),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        spacing: 10,
+                        children: [
+                          Text(
+                            '500mtr | 1 min',
+                            style: TextStyle(
+                              color: Color(0xFF00A78F),
+                              fontSize: 11,
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    gap(35),
+                    const Text('Avl : 20 slot',
+                        style: TextStyle(
+                          color: Color(0xFF00A78F),
+                          fontSize: 12,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w600,
+                        ))
+                  ],
+                )
+              ],
             ),
+          );
+        },
+        separatorBuilder: (BuildContext context, int index) {
+          return const SizedBox(
+            height: 10,
+          );
+        },
+      ),
     );
   }
 

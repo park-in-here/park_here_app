@@ -28,7 +28,7 @@ class VerifyOtpController extends GetxController {
       log(response.toString());
       if (respMOdel.message == "User registered successfully") {
         await store.write('token', respMOdel.token);
-
+        await store.write('name', respMOdel.token);
         log("Saved token: ${store.read('token')}");
         showToast(
             message: "User registered successfully",

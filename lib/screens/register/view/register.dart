@@ -81,7 +81,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         if (widget.isReset == false) gap(10),
                         if (widget.isReset == false)
                           textField(nameCtrl, 'E.g.Sudhin'),
-                        if (nameEmpty == true)
+                        if (nameEmpty == true &&  widget.isReset != true)
                           textStr(
                               'Name should not be empty',
                               10,
