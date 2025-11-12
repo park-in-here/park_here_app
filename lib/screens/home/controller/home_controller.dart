@@ -1,7 +1,7 @@
 import 'dart:developer';
-import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
 import 'package:park_in_here/screens/home/model/search_loc_model.dart';
+import 'package:park_in_here/screens/home/model/search_parking_model.dart';
 // import 'package:park_in_here/screens/home.dart';
 import 'package:park_in_here/utils/api_handler.dart';
 import 'package:get_storage/get_storage.dart';
@@ -12,31 +12,30 @@ class HomeController extends GetxController {
   ApiBaseHelper helper = ApiBaseHelper();
   GetStorage store = GetStorage();
   bool isLoading = false;
-    bool mapisLoading = false;
+  bool mapisLoading = false;
   SearchLocModel respMOdel = SearchLocModel();
-  List<LocData> locations = [];
+  NearbyModel respMOdel2 = NearbyModel();
+  SearchParkingModel respMOdel3 = SearchParkingModel();
+  List<LocDatas> locations = [];
+  List<LocationData> locations2 = [];
+  List<Parkings> parkings = [];
   List<String> addresses = [];
-  List<LocData> nearby = [];
+  List<NearbyLoc> nearby = [];
   getLocations(String text) async {
     log('llllll');
-    final token = await store.read('token');
+    final token =
+         await store.read('token');
     isLoading = true;
     update();
     try {
       var response = await helper.get(
-        "$base_url/api/findParking/search-parking?search=$text",
+        "$base_url/api/findParking/get-cities?search=$text",
         token,
       );
       log(response.toString());
       respMOdel = SearchLocModel.fromJson(response);
       locations = respMOdel.data ?? [];
-      for (var loc in locations) {
-        List<Placemark> placemarks = await placemarkFromCoordinates(
-            loc.location!.latitude!, loc.location!.longitude!);
-        Placemark place = placemarks.first;
-        String address = '${place.street}, ${place.locality}';
-        addresses.add(address);
-      }
+
       update();
       // if (response['message'] == "User logged in successfully") {
       //   await store.write('logged', true);
@@ -57,26 +56,47 @@ class HomeController extends GetxController {
     }
   }
 
-  getNearby( ) async {
+  getNearby(String lat, String long) async {
     log('rrrrr');
-    final token = await store.read('token');
+    final token =
+        await store.read('token');
     mapisLoading = true;
     update();
     try {
       var response = await helper.get(
-        "$base_url/api/findParking/near-by-spots",
+        "$base_url/api/findParking/near-by-spots?latitude=$lat&longitude=$long",
         token,
       );
       log(response.toString());
-      respMOdel = SearchLocModel.fromJson(response);
-      nearby = respMOdel.data ?? [];
-      // for (var loc in locations) {
-      //   List<Placemark> placemarks = await placemarkFromCoordinates(
-      //       loc.location!.latitude!, loc.location!.longitude!);
-      //   Placemark place = placemarks.first;
-      //   String address = '${place.street}, ${place.locality}';
-      //   addresses.add(address);
-      // }
+      respMOdel2 = NearbyModel.fromJson(response);
+      nearby = respMOdel2.data ?? [];
+
+      update();
+      mapisLoading = false;
+      update();
+      // _checknewVersion();
+    } on UniversalException {
+      isLoading = false;
+      update();
+    }
+  }
+
+
+  getParkings(String lat, String long) async {
+    log('rrrrr');
+    final token =
+     await store.read('token');
+    mapisLoading = true;
+    update();
+    try {
+      var response = await helper.get(
+        "$base_url/api/findParking/search-parking?latitude=$lat&longitude=$long",
+        token,
+      );
+      log(response.toString());
+      respMOdel3 = SearchParkingModel.fromJson(response);
+      parkings = respMOdel3.data ?? [];
+
       update();
       mapisLoading = false;
       update();
@@ -90,8 +110,12 @@ class HomeController extends GetxController {
   @override
   void onInit() async {
     var token = await store.read('token');
-    getNearby();
+
     log('----$token');
     super.onInit();
   }
 }
+
+
+
+

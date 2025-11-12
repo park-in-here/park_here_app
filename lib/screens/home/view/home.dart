@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, undefined_hidden_name
 
 import 'dart:developer';
 
@@ -14,6 +14,7 @@ import 'package:location/location.dart';
 import 'package:park_in_here/screens/home/controller/home_controller.dart';
 import 'package:park_in_here/screens/home/model/search_loc_model.dart'
     hide Location;
+import 'package:park_in_here/screens/park_details/view/park_details.dart';
 // import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -23,23 +24,35 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
-  List<LocData> filteredResults = [];
-  List<String> addresses = [];
+  List<LocDatas> filteredResults = [];
   bool showSuggestions = false;
+  late AnimationController _controller;
+  late Animation<double> opacityAnim;
   HomeController contrlr = Get.put(HomeController());
   LatLng? currentLocation;
   bool vehicleSelected = false;
   bool locSelected = false;
+
   GetStorage store = GetStorage();
   final MapController mapController = MapController();
+  bool _parksLoading = false;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _getCurrentLocation();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true); // Loop back and forth
+
+    opacityAnim = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
   }
 
   double calculateDistance(LatLng start, LatLng end) {
@@ -49,6 +62,23 @@ class _HomeScreenState extends State<HomeScreen> {
       end.latitude,
       end.longitude,
     ); // returns distance in meters
+  }
+
+  String formatDistanceAndTime(double distanceInMeters,
+      {double speedKmph = 40}) {
+    if (distanceInMeters <= 0) return '?';
+
+    final distanceKm = distanceInMeters / 1000;
+    final timeHours = distanceKm / speedKmph;
+    final timeMinutes = (timeHours * 60).round();
+
+    final distanceText = distanceInMeters < 1000
+        ? '${distanceInMeters.toStringAsFixed(0)}m'
+        : '${distanceKm.toStringAsFixed(2)}km';
+
+    final timeText = timeMinutes < 1 ? '<1min' : '${timeMinutes}min';
+
+    return '$distanceText : $timeText';
   }
 
   Future<void> _getCurrentLocation() async {
@@ -75,8 +105,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final locData = await location.getLocation();
     setState(() {
-      currentLocation = LatLng(locData.latitude!, locData.longitude!);
+      currentLocation = LatLng(12.936804163369425, 77.61841010880141);
+      //  LatLng(locData.latitude!, locData.longitude!);
     });
+    await contrlr.getNearby(currentLocation!.latitude.toString(),
+        currentLocation!.longitude.toString());
     mapController.move(currentLocation!, 12.0);
     log('Location fetched: ${locData.latitude}, ${locData.longitude}');
   }
@@ -92,10 +125,8 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } else {
       final results = contrlr.locations;
-      final values = contrlr.addresses;
       setState(() {
         filteredResults = results;
-        addresses = values;
         showSuggestions = true;
       });
     }
@@ -104,6 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -115,6 +147,8 @@ class _HomeScreenState extends State<HomeScreen> {
         init: HomeController(),
         builder: (controller) => SafeArea(
               child: Scaffold(
+                backgroundColor:
+                    _parksLoading == true ? Colors.grey : Colors.white,
                 resizeToAvoidBottomInset: false,
                 body: Stack(
                   children: [
@@ -124,90 +158,99 @@ class _HomeScreenState extends State<HomeScreen> {
                             strokeWidth: 2,
                             color: Color(0xff3572EF),
                           ))
-                        : FlutterMap(
-                            mapController: mapController,
-                            options: MapOptions(
-                              center: currentLocation ??
-                                  LatLng(
-                                      controller.nearby[0].location!.latitude!,
-                                      controller
-                                          .nearby[0].location!.longitude!),
-                              zoom: 12.0,
-                              interactiveFlags:
-                                  InteractiveFlag.all & ~InteractiveFlag.rotate,
-                            ),
-                            children: [
-                              TileLayer(
-                                backgroundColor: Colors.white,
-                                urlTemplate:
-                                    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                                userAgentPackageName: 'com.parkin.park_in_here',
+                        : Opacity(
+                            opacity: _parksLoading ? 0.8 : 1,
+                            child: FlutterMap(
+                              mapController: mapController,
+                              options: MapOptions(
+                                center: currentLocation ??
+                                    LatLng(
+                                        controller
+                                            .nearby[0].location!.latitude!,
+                                        controller
+                                            .nearby[0].location!.longitude!),
+                                zoom: 12.0,
+                                interactiveFlags: InteractiveFlag.all &
+                                    ~InteractiveFlag.rotate,
                               ),
-                              MarkerLayer(
-                                markers: [
-                                  if (currentLocation != null)
-                                    Marker(
-                                      point: currentLocation!,
-                                      width: 80,
-                                      height: 80,
-                                      child: Image.asset(
-                                        'assets/images/current_loc.png',
-                                        height: 50,
-                                        width: 60,
+                              children: [
+                                TileLayer(
+                                  backgroundColor: _parksLoading == true
+                                      ? Colors.grey
+                                      : Colors.white,
+                                  urlTemplate:
+                                      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                                  userAgentPackageName:
+                                      'com.parkin.park_in_here',
+                                ),
+                                MarkerLayer(
+                                  markers: [
+                                    if (currentLocation != null &&
+                                        _parksLoading == false)
+                                      Marker(
+                                        point: currentLocation!,
+                                        width: 80,
+                                        height: 80,
+                                        child: Image.asset(
+                                          'assets/images/current_loc.png',
+                                          height: 50,
+                                          width: 60,
+                                        ),
                                       ),
-                                    ),
-                                  ...controller.nearby
-                                      .map((place) {
-                                        final lat = place.location?.latitude;
-                                        final lng = place.location?.longitude;
+                                    ...controller.nearby
+                                        .map((place) {
+                                          final lat = place.location?.latitude;
+                                          final lng = place.location?.longitude;
 
-                                        if (lat == null || lng == null) {
-                                          return null;
-                                        }
+                                          if (lat == null || lng == null) {
+                                            return null;
+                                          }
 
-                                        return Marker(
-                                          width: 100,
-                                          height: 100,
-                                          point: LatLng(lat, lng),
-                                          child: Column(
-                                            children: [
-                                              const Icon(Icons.location_on,
-                                                  color: Colors.black,
-                                                  size: 30),
-                                              Container(
-                                                height: 30,
-                                                width: 100,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius:
-                                                      BorderRadius.circular(5),
-                                                  boxShadow: const [
-                                                    BoxShadow(
-                                                        color:
-                                                            Color(0x3F000000),
-                                                        blurRadius: 4,
-                                                        offset: Offset(0, 4))
-                                                  ],
-                                                ),
-                                                child: Center(
-                                                  child: Text(
-                                                    '${(currentLocation != null ? (calculateDistance(currentLocation!, LatLng(lat, lng)) / 1000).toStringAsFixed(2) : '?')} km',
-                                                    style: GoogleFonts.inter(
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.w500),
+                                          return Marker(
+                                            width: 100,
+                                            height: 100,
+                                            point: LatLng(lat, lng),
+                                            child: Column(
+                                              children: [
+                                                const Icon(Icons.location_on,
+                                                    color: Colors.black,
+                                                    size: 30),
+                                                Container(
+                                                  height: 30,
+                                                  width: 100,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            5),
+                                                    boxShadow: const [
+                                                      BoxShadow(
+                                                          color:
+                                                              Color(0x3F000000),
+                                                          blurRadius: 4,
+                                                          offset: Offset(0, 4))
+                                                    ],
                                                   ),
-                                                ),
-                                              )
-                                            ],
-                                          ),
-                                        );
-                                      })
-                                      .whereType<Marker>()
-                                      .toList(),
-                                ],
-                              ),
-                            ],
+                                                  child: Center(
+                                                    child: Text(
+                                                      '${(currentLocation != null ? (calculateDistance(currentLocation!, LatLng(lat, lng)) / 1000).toStringAsFixed(2) : '?')} km',
+                                                      style: GoogleFonts.inter(
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.w500),
+                                                    ),
+                                                  ),
+                                                )
+                                              ],
+                                            ),
+                                          );
+                                        })
+                                        .whereType<Marker>()
+                                        .toList(),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
 
                     // Container(
@@ -294,7 +337,19 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
-                    if (locSelected == true) listPark(),
+                    if (locSelected == true)
+                      _parksLoading
+                          ? Center(
+                              child: FadeTransition(
+                                opacity: opacityAnim,
+                                child: Image.asset(
+                                  'assets/images/progress.png',
+                                  height: 100,
+                                  width: 100,
+                                ),
+                              ),
+                            )
+                          : listPark(),
                     if (vehicleSelected == false)
                       Positioned(
                         bottom: 20,
@@ -548,31 +603,39 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemCount: filteredResults.length,
                   itemBuilder: (context, index) {
                     var place = filteredResults[index];
-                    var address = addresses[index];
-                    final lati = place.location?.latitude;
-                    final lngi = place.location?.longitude;
+
                     return ListTile(
                       title: Text.rich(
-                        _highlightText(place.name!, _searchController.text),
+                        _highlightText(
+                            place.addressLine2!, _searchController.text),
                       ),
                       subtitle: Text(
-                        address,
+                        place.addressLine1!,
                         style: tStyle,
                       ),
                       trailing: Text(
-                        '${(currentLocation != null ? (calculateDistance(currentLocation!, LatLng(lati!, lngi!)) / 1000).toStringAsFixed(2) : '...')} km',
+                        '${(currentLocation != null ? (calculateDistance(currentLocation!, LatLng(place.latitude!, place.longitude!)) / 1000).toStringAsFixed(2) : '...')} km',
                         style: tStyle.copyWith(color: Colors.black),
                       ),
                       // trailing: Text(
                       //   place['distance'],
                       //   style: tStyle,
                       // ),
-                      onTap: () {
+                      onTap: () async {
                         // Handle selection
-                        _searchController.text = place.name!;
+                        _searchController.text = place.addressLine2!;
                         setState(() {
                           locSelected = true;
                           showSuggestions = false;
+
+                          _parksLoading = true;
+                        });
+                        await contrlr.getParkings(place.latitude!.toString(),
+                            place.longitude!.toString());
+                        Future.delayed(const Duration(seconds: 2), () {
+                          setState(() {
+                            _parksLoading = false;
+                          });
                         });
                       },
                     );
@@ -591,99 +654,127 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.only(top: 70.0, left: 12, right: 20),
       child: ListView.separated(
-        itemCount: 8,
+        itemCount: contrlr.parkings.length,
         itemBuilder: (context, index) {
-          return Container(
-            width: w * 0.65,
-            height: 110,
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15), color: Colors.white),
-            child: Row(
-              children: [
-                Image.asset(
-                  'assets/images/Rectangle 59.png',
-                  height: 80,
-                  width: 100,
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    gap(12),
-                    const Text(
-                      'Graha Mall',
-                      style: TextStyle(
-                        color: Color(0xFF2D2D2D),
-                        fontSize: 14,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    const Text(
-                      '123 Dhaka Street',
-                      style: TextStyle(
-                        color: Color(0x7F2D2D2D),
-                        fontSize: 11,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    gap(20),
-                    const Text(
-                      '₹500/hr',
-                      style: TextStyle(
-                        color: Color(0xFF081024),
-                        fontSize: 13,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  width: 20,
-                ),
-                Column(
-                  children: [
-                    gap(12),
-                    Container(
-                      height: 26,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 5),
-                      decoration: ShapeDecoration(
-                        color: const Color(0x1605C9AD),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+          return GestureDetector(
+            onTap: () {
+              store.write('parkId', contrlr.parkings[index].id);
+              Get.to(() => const ParkDetails());
+            },
+            child: Container(
+              width: w * 0.65,
+              height: 110,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15), color: Colors.white),
+              child: Row(
+                children: [
+                  Image.asset(
+                    'assets/images/Rectangle 59.png',
+                    height: 80,
+                    width: 100,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      gap(12),
+                      Text(
+                        contrlr.parkings.isNotEmpty
+                            ? contrlr.parkings[index].name!
+                            : 'Unknown Location',
+                        style: TextStyle(
+                          color: Color(0xFF2D2D2D),
+                          fontSize: 14,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        spacing: 10,
-                        children: [
-                          Text(
-                            '500mtr | 1 min',
-                            style: TextStyle(
-                              color: Color(0xFF00A78F),
-                              fontSize: 11,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    gap(35),
-                    const Text('Avl : 20 slot',
+                      Text(
+                        '${contrlr.parkings[index].location?.addressLine1},${contrlr.parkings[index].location?.addressLine2}',
                         style: TextStyle(
-                          color: Color(0xFF00A78F),
-                          fontSize: 12,
+                          color: Color(0x7F2D2D2D),
+                          fontSize: 11,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      gap(20),
+                      Text(
+                        '₹${contrlr.parkings[index].pricePerHour}/hr',
+                        style: TextStyle(
+                          color: Color(0xFF081024),
+                          fontSize: 13,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w600,
-                        ))
-                  ],
-                )
-              ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(
+                    width: 20,
+                  ),
+                  Column(
+                    children: [
+                      gap(12),
+                      Container(
+                        height: 26,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 5),
+                        decoration: ShapeDecoration(
+                          color: const Color(0x1605C9AD),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          spacing: 10,
+                          children: [
+                            Text(
+                              (contrlr.parkings[index].location?.latitude !=
+                                          null &&
+                                      contrlr.parkings[index].location
+                                              ?.longitude !=
+                                          null &&
+                                      currentLocation != null)
+                                  ? (() {
+                                      final distance = calculateDistance(
+                                        currentLocation!,
+                                        LatLng(
+                                          contrlr.parkings[index].location!
+                                              .latitude!,
+                                          contrlr.parkings[index].location!
+                                              .longitude!,
+                                        ),
+                                      );
+                                      return formatDistanceAndTime(distance,
+                                          speedKmph: 40);
+                                    })()
+                                  : '?',
+                              style: TextStyle(
+                                color: Color(0xFF00A78F),
+                                fontSize: 11,
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      gap(35),
+                      Text(
+                          'Avl : ${contrlr.parkings[index].availableSlots} slot',
+                          style: TextStyle(
+                            color: Color(0xFF00A78F),
+                            fontSize: 12,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w600,
+                          ))
+                    ],
+                  )
+                ],
+              ),
             ),
           );
         },
