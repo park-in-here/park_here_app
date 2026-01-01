@@ -1,12 +1,14 @@
 class VerifyOtpResponse {
   String? message;
   String? token;
+  String? refreshToken;
   User? user;
 
   VerifyOtpResponse({
     this.message,
     this.token,
     this.user,
+    this.refreshToken
   });
 
   factory VerifyOtpResponse.fromJson(Map<String?, dynamic> json) =>
@@ -14,11 +16,13 @@ class VerifyOtpResponse {
         message: json["message"],
         token: json["token"],
         user: User.fromJson(json["user"]),
+        refreshToken: json["refreshToken"]
       );
 
   Map<String?, dynamic> toJson() => {
         "message": message,
         "token": token,
+        "refreshToken":refreshToken,
         "user": user!.toJson(),
       };
 }

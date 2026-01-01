@@ -1,7 +1,6 @@
-// ignore_for_file: deprecated_member_use, undefined_hidden_name
+// ignore_for_file: deprecated_member_use, undefined_hidden_name, unnecessary_null_comparison, curly_braces_in_flow_control_structures
 
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -37,12 +36,14 @@ class _HomeScreenState extends State<HomeScreen>
   bool locSelected = false;
 
   GetStorage store = GetStorage();
-  final MapController mapController = MapController();
+  late final MapController mapController;
+  bool _mapReady = false;
   bool _parksLoading = false;
 
   @override
   void initState() {
     super.initState();
+    mapController = MapController();
     _searchController.addListener(_onSearchChanged);
     _getCurrentLocation();
     _controller = AnimationController(
@@ -84,39 +85,51 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _getCurrentLocation() async {
     Location location = Location();
 
-    bool serviceEnabled;
-    PermissionStatus permissionGranted;
-
-    serviceEnabled = await location.serviceEnabled();
+    // Check service
+    bool serviceEnabled = await location.serviceEnabled();
     if (!serviceEnabled) {
       serviceEnabled = await location.requestService();
-      if (!serviceEnabled) {
-        return;
-      }
+      if (!serviceEnabled) return;
     }
 
-    permissionGranted = await location.hasPermission();
+    // Check permissions
+    PermissionStatus permissionGranted = await location.hasPermission();
     if (permissionGranted == PermissionStatus.denied) {
       permissionGranted = await location.requestPermission();
-      if (permissionGranted != PermissionStatus.granted) {
-        return;
-      }
+      if (permissionGranted != PermissionStatus.granted) return;
     }
 
+    // Get location
     final locData = await location.getLocation();
+    final fetchedLocation =
+        LatLng(locData.latitude ?? 0.0, locData.longitude ?? 0.0);
+
     setState(() {
-      currentLocation = LatLng(12.936804163369425, 77.61841010880141);
-      //  LatLng(locData.latitude!, locData.longitude!);
+      currentLocation = fetchedLocation;
     });
-    await contrlr.getNearby(currentLocation!.latitude.toString(),
-        currentLocation!.longitude.toString());
-    mapController.move(currentLocation!, 12.0);
-    log('Location fetched: ${locData.latitude}, ${locData.longitude}');
+
+    // Fetch nearby places
+    await contrlr.getNearby(
+      currentLocation!.latitude.toString(),
+      currentLocation!.longitude.toString(),
+    );
+
+    // Ensure map has built before moving the camera
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mapController != null) {
+        mapController.move(currentLocation!, 12.0);
+        log('Map moved to: ${currentLocation!.latitude}, ${currentLocation!.longitude}');
+      }
+    });
   }
 
   void _onSearchChanged() async {
+    log('Search query: ${_searchController.text}');
     final query = _searchController.text.toLowerCase();
-    await contrlr.getLocations(query);
+    if(query.length >1){
+await contrlr.getLocations(query);
+    }
+    
 
     if (query.isEmpty) {
       setState(() {
@@ -124,6 +137,7 @@ class _HomeScreenState extends State<HomeScreen>
         showSuggestions = false;
       });
     } else {
+      log('Filtering results for query: $query');
       final results = contrlr.locations;
       setState(() {
         filteredResults = results;
@@ -152,107 +166,108 @@ class _HomeScreenState extends State<HomeScreen>
                 resizeToAvoidBottomInset: false,
                 body: Stack(
                   children: [
-                    controller.mapisLoading || controller.nearby.isEmpty
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xff3572EF),
-                          ))
-                        : Opacity(
-                            opacity: _parksLoading ? 0.8 : 1,
-                            child: FlutterMap(
-                              mapController: mapController,
-                              options: MapOptions(
-                                center: currentLocation ??
-                                    LatLng(
-                                        controller
-                                            .nearby[0].location!.latitude!,
-                                        controller
-                                            .nearby[0].location!.longitude!),
-                                zoom: 12.0,
-                                interactiveFlags: InteractiveFlag.all &
-                                    ~InteractiveFlag.rotate,
-                              ),
-                              children: [
-                                TileLayer(
-                                  backgroundColor: _parksLoading == true
-                                      ? Colors.grey
-                                      : Colors.white,
-                                  urlTemplate:
-                                      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                                  userAgentPackageName:
-                                      'com.parkin.park_in_here',
+                    // MAP
+                    if (currentLocation != null)
+                      FlutterMap(
+                        mapController: mapController,
+                        options: MapOptions(
+                          center: currentLocation!,
+                          zoom: 12.0,
+                          interactiveFlags:
+                              InteractiveFlag.all & ~InteractiveFlag.rotate,
+                          onMapReady: () {
+                            setState(() {
+                              _mapReady = true;
+                            });
+                          },
+                        ),
+                        children: [
+                          TileLayer(
+                            backgroundColor:
+                                _parksLoading ? Colors.grey : Colors.white,
+                            urlTemplate:
+                                'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.parkin.park_in_here',
+                          ),
+                          MarkerLayer(
+                            markers: [
+                              if (currentLocation != null && !_parksLoading)
+                                Marker(
+                                  point: currentLocation!,
+                                  width: 80,
+                                  height: 80,
+                                  child: Image.asset(
+                                    'assets/images/current_loc.png',
+                                    height: 50,
+                                    width: 60,
+                                  ),
                                 ),
-                                MarkerLayer(
-                                  markers: [
-                                    if (currentLocation != null &&
-                                        _parksLoading == false)
-                                      Marker(
-                                        point: currentLocation!,
-                                        width: 80,
-                                        height: 80,
-                                        child: Image.asset(
-                                          'assets/images/current_loc.png',
-                                          height: 50,
-                                          width: 60,
-                                        ),
-                                      ),
-                                    ...controller.nearby
-                                        .map((place) {
-                                          final lat = place.location?.latitude;
-                                          final lng = place.location?.longitude;
+                              ...controller.nearby
+                                  .map((place) {
+                                    final lat = place.location?.latitude;
+                                    final lng = place.location?.longitude;
+                                    if (lat == null || lng == null) return null;
 
-                                          if (lat == null || lng == null) {
-                                            return null;
-                                          }
-
-                                          return Marker(
+                                    return Marker(
+                                      width: 100,
+                                      height: 100,
+                                      point: LatLng(lat, lng),
+                                      child: Column(
+                                        children: [
+                                          const Icon(Icons.location_on,
+                                              color: Colors.black, size: 30),
+                                          Container(
+                                            height: 30,
                                             width: 100,
-                                            height: 100,
-                                            point: LatLng(lat, lng),
-                                            child: Column(
-                                              children: [
-                                                const Icon(Icons.location_on,
-                                                    color: Colors.black,
-                                                    size: 30),
-                                                Container(
-                                                  height: 30,
-                                                  width: 100,
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            5),
-                                                    boxShadow: const [
-                                                      BoxShadow(
-                                                          color:
-                                                              Color(0x3F000000),
-                                                          blurRadius: 4,
-                                                          offset: Offset(0, 4))
-                                                    ],
-                                                  ),
-                                                  child: Center(
-                                                    child: Text(
-                                                      '${(currentLocation != null ? (calculateDistance(currentLocation!, LatLng(lat, lng)) / 1000).toStringAsFixed(2) : '?')} km',
-                                                      style: GoogleFonts.inter(
-                                                          fontSize: 12,
-                                                          fontWeight:
-                                                              FontWeight.w500),
-                                                    ),
-                                                  ),
-                                                )
-                                              ],
+                                            child: Center(
+                                              child: Text(
+                                                '${currentLocation != null ? (calculateDistance(currentLocation!, LatLng(lat, lng)) / 1000).toStringAsFixed(2) : '?'} km',
+                                              ),
                                             ),
-                                          );
-                                        })
-                                        .whereType<Marker>()
-                                        .toList(),
-                                  ],
-                                ),
-                              ],
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  })
+                                  .whereType<Marker>()
+                                  .toList(),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                    // LOADER WHILE FETCHING NEARBY
+                    if (controller.mapisLoading)
+                      const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xff3572EF),
+                        ),
+                      ),
+
+                    // 👉 SHOW ONLY AFTER:
+                    //    - not loading
+                    //    - map is ready
+                    //    - nearby is empty
+                    if (!controller.mapisLoading &&
+                        _mapReady &&
+                        controller.nearby.isEmpty)
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'No nearby parking spots found',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-
+                        ),
+                      ),
                     // Container(
                     //   decoration: const BoxDecoration(
                     //     image: DecorationImage(
@@ -662,7 +677,7 @@ class _HomeScreenState extends State<HomeScreen>
               Get.to(() => const ParkDetails());
             },
             child: Container(
-              width: w * 0.65,
+              width: w * 0.2,
               height: 110,
               decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(15), color: Colors.white),
@@ -681,7 +696,7 @@ class _HomeScreenState extends State<HomeScreen>
                         contrlr.parkings.isNotEmpty
                             ? contrlr.parkings[index].name!
                             : 'Unknown Location',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0xFF2D2D2D),
                           fontSize: 14,
                           fontFamily: 'Inter',
@@ -690,7 +705,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                       Text(
                         '${contrlr.parkings[index].location?.addressLine1},${contrlr.parkings[index].location?.addressLine2}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0x7F2D2D2D),
                           fontSize: 11,
                           fontFamily: 'Inter',
@@ -700,7 +715,7 @@ class _HomeScreenState extends State<HomeScreen>
                       gap(20),
                       Text(
                         '₹${contrlr.parkings[index].pricePerHour}/hr',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0xFF081024),
                           fontSize: 13,
                           fontFamily: 'Inter',
@@ -752,7 +767,7 @@ class _HomeScreenState extends State<HomeScreen>
                                           speedKmph: 40);
                                     })()
                                   : '?',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: Color(0xFF00A78F),
                                 fontSize: 11,
                                 fontFamily: 'Inter',
@@ -765,7 +780,7 @@ class _HomeScreenState extends State<HomeScreen>
                       gap(35),
                       Text(
                           'Avl : ${contrlr.parkings[index].availableSlots} slot',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Color(0xFF00A78F),
                             fontSize: 12,
                             fontFamily: 'Inter',

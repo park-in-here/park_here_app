@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:get/get.dart';
+// import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:park_in_here/screens/park_details/model/park_detail_model.dart';
 import 'package:park_in_here/screens/park_details/provider/park_provider.dart';
@@ -10,101 +10,96 @@ import 'package:park_in_here/screens/park_details/provider/park_provider.dart';
 class ParkDetails extends ConsumerWidget {
   const ParkDetails({super.key});
 
-
-
-   
-
-  
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    bool isHours = true;
-  bool isSlotSelected = false;
-  bool timeOrHourSelected = false;
-  int? outerIndex;
+    // bool isHours = true;
+    // bool isSlotSelected = false;
+    // bool timeOrHourSelected = false;
+    // int? outerIndex;
 
-  int? innerIndex;
+    // int? innerIndex;
     final parkDetailsAsyncValue = ref.watch(parkingProvider);
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: parkDetailsAsyncValue.when(
-        data: (list) =>SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              gap(50),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        backgroundColor: Colors.white,
+        body: parkDetailsAsyncValue.when(
+          data: (list) => SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  textItem(false, 'PARKING DETAIL', const Color(0xFF707070), 14,
-                      FontWeight.w500),
-                  const Icon(Icons.bookmark_border)
-                ],
-              ),
-              gap(10),
-              listImages(list[0].attachments ?? []),
-              gap(20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  textItem(true, list[0].name!,
-                      const Color(0xFF192242), 16, FontWeight.w700),
-                  textItem(false, 'Avl : ${list[0].totalSlots} slot', const Color(0xFF00A78F), 14,
-                      FontWeight.w500),
-                ],
-              ),
-              gap(20),
-              // wrapItems(false),
-              gap(20),
-              textItem(
-                  false, 'RULES', const Color(0xFF707070), 14, FontWeight.w500),
-              textItem(
-                  false,
-                  'These rules and regulations for the use of Dummy University Parking Area. In these Rules, unless the context otherwise requires',
-                  const Color(0xFF707070),
-                  12,
-                  FontWeight.w400),
-              gap(20),
-              // selection(),
-              gap(20),
-              // wrapItems(true),
-              gap(30),
-              Column(
-                children: [
-                  const Text(
-                    'Cancelling a booking will incur a ₹100 fee. You can’t book again until it’s paid.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(
-                          0x8C808080) /* Miscellaneous-Alert-Menu-Action-Sheet---Separators */,
-                      fontSize: 11,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w400,
-                      height: 1.70,
-                    ),
+                  gap(50),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      textItem(false, 'PARKING DETAIL', const Color(0xFF707070),
+                          14, FontWeight.w500),
+                      const Icon(Icons.bookmark_border)
+                    ],
                   ),
                   gap(10),
-                  // button(false)
+                  listImages(list[0].attachments ?? []),
+                  gap(20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      textItem(true, list[0].name!, const Color(0xFF192242), 16,
+                          FontWeight.w700),
+                      textItem(false, 'Avl : ${list[0].totalSlots} slot',
+                          const Color(0xFF00A78F), 14, FontWeight.w500),
+                    ],
+                  ),
+                  gap(20),
+                  // wrapItems(false),
+                  gap(20),
+                  textItem(false, 'RULES', const Color(0xFF707070), 14,
+                      FontWeight.w500),
+                  textItem(
+                      false,
+                      'These rules and regulations for the use of Dummy University Parking Area. In these Rules, unless the context otherwise requires',
+                      const Color(0xFF707070),
+                      12,
+                      FontWeight.w400),
+                  gap(20),
+                  // selection(),
+                  gap(20),
+                  // wrapItems(true),
+                  gap(30),
+                  Column(
+                    children: [
+                      const Text(
+                        'Cancelling a booking will incur a ₹100 fee. You can’t book again until it’s paid.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(
+                              0x8C808080) /* Miscellaneous-Alert-Menu-Action-Sheet---Separators */,
+                          fontSize: 11,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w400,
+                          height: 1.70,
+                        ),
+                      ),
+                      gap(10),
+                      // button(false)
+                    ],
+                  )
                 ],
-              )
-            ],
+              ),
+            ),
           ),
-        ),
-      ),
-       loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(err.toString())),
-    ));
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, _) => Center(child: Text(err.toString())),
+        ));
   }
 
-  Widget listImages(List<Attachment> images)  {
+  Widget listImages(List<Attachment> images) {
     return SizedBox(
       height: 150,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: 5,
+        itemCount: images.length,
         itemBuilder: (context, index) {
-          return Image.network( images[index].filePath ?? '');
+          return Image.network(images[index].filePath ?? '');
         },
         separatorBuilder: (BuildContext context, int index) {
           return const SizedBox(width: 10);

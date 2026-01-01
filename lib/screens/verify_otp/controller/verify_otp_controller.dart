@@ -1,49 +1,76 @@
 import 'dart:developer';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-// import 'package:park_in_here/screens/home.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:park_in_here/dio/dio_client.dart';
 import 'package:park_in_here/screens/passcode/view/passcode.dart';
 import 'package:park_in_here/screens/verify_otp/model/resp_model.dart';
-import 'package:park_in_here/utils/api_handler.dart';
-import 'package:get_storage/get_storage.dart';
-import 'package:park_in_here/utils/app_exceptions.dart';
-import 'package:park_in_here/utils/constants.dart';
 import 'package:park_in_here/utils/toast.dart';
+import 'package:park_in_here/utils/app_exceptions.dart';
 
 class VerifyOtpController extends GetxController {
-  ApiBaseHelper helper = ApiBaseHelper();
+  final dio = DioClient().dio;
   GetStorage store = GetStorage();
+
   bool isLoading = false;
-  VerifyOtpResponse respMOdel = VerifyOtpResponse();
+  VerifyOtpResponse respModel = VerifyOtpResponse();
 
   verifyOtp(String name, String phone, String otp) async {
     isLoading = true;
     update();
+
     try {
-      var response = await helper.post("$base_url/api/auth/register/verify-otp",
-          {"otp": otp, "contact": phone, "name": name});
-      log(response.toString());
-      respMOdel = VerifyOtpResponse.fromJson(response);
+      log("📨 Verifying OTP for $phone ...");
+
+      final response = await dio.post(
+        "auth/register/verify-otp",
+        data: {
+          "otp": otp,
+          "contact": phone,
+          "name": name,
+        },
+      );
+
+      log("⬅️ RESPONSE: ${response.data}");
+
+      respModel = VerifyOtpResponse.fromJson(response.data);
       update();
-      log(response.toString());
-      if (respMOdel.message == "User registered successfully") {
-        await store.write('token', respMOdel.token);
-        await store.write('name', respMOdel.token);
-        log("Saved token: ${store.read('token')}");
+
+      if (respModel.message == "User registered successfully") {
+        // Save token and name
+        await store.write('token', respModel.token);
+        await store.write('name', respModel.user?.name ?? "");
+
+        log("💾 Saved token: ${store.read('token')}");
+
         showToast(
-            message: "User registered successfully",
-            backgroundColor: Colors.green);
+          message: "User registered successfully",
+          backgroundColor: Colors.green,
+        );
+
         Get.to(() => const PassCodeScreen());
       } else {
-        showToast(message: respMOdel.message!, backgroundColor: Colors.red);
+        showToast(
+          message: respModel.message ?? "Something went wrong",
+          backgroundColor: Colors.red,
+        );
       }
 
       isLoading = false;
       update();
-      // _checknewVersion();
-    } on UniversalException {
+    } on DioException catch (e) {
       isLoading = false;
       update();
+
+      log("❌ OTP Verification Error: ${e.message}");
+
+      showToast(
+        message: "${e.message}",
+        backgroundColor: Colors.red,
+      );
+
+      throw UniversalException(e.message ?? "OTP verification failed");
     }
   }
 }
